@@ -1,12 +1,23 @@
 import React from 'react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { Trash2, Wallet } from 'lucide-react';
+import { cn } from '../utils/cn';
 const ExpenseItem = ({ exp, onRemove, isSwiped, onDragStart, onDragEnd }) => {
   const controls = useAnimation();
 
   React.useEffect(() => {
     controls.start({ x: isSwiped ? -100 : 0 });
   }, [isSwiped, controls]);
+
+  const getFontSize = (val) => {
+    const len = val.toString().length;
+    if (len > 50) return "text-[8px] leading-[1.1] opacity-90 transition-all";
+    if (len > 35) return "text-[9px] leading-tight";
+    if (len > 25) return "text-[10px]";
+    if (len > 18) return "text-xs";
+    if (len > 12) return "text-sm";
+    return "text-base";
+  };
 
   return (
     <motion.div
@@ -33,22 +44,22 @@ const ExpenseItem = ({ exp, onRemove, isSwiped, onDragStart, onDragEnd }) => {
         transition={{ type: 'spring', stiffness: 700, damping: 50 }}
         onDragStart={onDragStart}
         onDragEnd={onDragEnd}
-        className="relative z-10 flex justify-between items-center bg-[var(--card-bg)] border border-[var(--border)] rounded-[24px] p-5 shadow-lg active:scale-[0.98] transition-shadow touch-pan-y"
+        className="relative z-10 flex flex-col sm:flex-row justify-between items-start sm:items-center bg-[var(--card-bg)] border border-[var(--border)] rounded-[24px] p-5 shadow-lg active:scale-[0.98] transition-shadow touch-pan-y gap-2"
       >
-        <div>
-          <p className="text-lg font-bold text-[var(--text)] capitalize leading-tight">
+        <div className="flex-1 w-full overflow-hidden">
+          <p className="text-base md:text-lg font-bold text-[var(--text)] capitalize leading-tight break-words">
             {exp.name}
           </p>
         </div>
-        <div className="flex items-center gap-4">
-          <p className="text-lg font-black text-[var(--text)] tracking-tighter">
+        <div className="flex items-center justify-between w-full sm:w-auto gap-4">
+          <p className={cn("font-black text-[var(--text)] tracking-tighter break-all tabular-nums", getFontSize(exp.amount))}>
             {new Intl.NumberFormat('uz-UZ').format(exp.amount).replace(/,/g, ' ')} 
-            <span className="text-sm font-bold opacity-30 ml-1">so'm</span>
+            <span className="text-[10px] font-bold opacity-30 ml-1 uppercase">so'm</span>
           </p>
           
           <button
             onClick={() => onRemove(exp.id)}
-            className="hidden md:flex text-red-500 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+            className="hidden md:flex text-red-500 p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
           >
             <Trash2 size={20} />
           </button>
@@ -58,7 +69,7 @@ const ExpenseItem = ({ exp, onRemove, isSwiped, onDragStart, onDragEnd }) => {
   );
 };
 
-export default function ExpenseList({ expenses, onRemove }) {
+export default function ExpenseList({ expenses, onRemove, onClearAll }) {
   const [swipedId, setSwipedId] = React.useState(null);
 
   React.useEffect(() => {
@@ -110,13 +121,13 @@ export default function ExpenseList({ expenses, onRemove }) {
   });
 
   return (
-    <div className="space-y-10 pb-20">
+    <div className="space-y-6 pb-20">
       {Object.entries(groups).map(([label, items]) => {
         if (items.length === 0) return null;
         
         return (
           <div key={label} className="relative">
-            <h3 className="sticky top-0 z-10 py-3 bg-[var(--background)]/80 backdrop-blur-md text-xs font-bold text-[var(--text-muted)] px-4 uppercase tracking-[0.2em] mb-2 transition-colors">
+            <h3 className="text-center text-xs font-black text-[var(--text-muted)] uppercase tracking-[0.4em] mb-8 mt-6">
               {label}
             </h3>
             <div className="space-y-3">
@@ -142,6 +153,24 @@ export default function ExpenseList({ expenses, onRemove }) {
           </div>
         );
       })}
+
+      {expenses.length > 2 && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="pt-2"
+        >
+          <motion.button
+            whileHover={{ scale: 1.02, backgroundColor: 'rgba(244, 63, 94, 0.1)' }}
+            whileTap={{ scale: 0.98 }}
+            onClick={onClearAll}
+            className="w-full py-5 text-[10px] font-black text-rose-500 uppercase tracking-[0.4em] border border-rose-500/20 rounded-[24px] transition-all flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <Trash2 size={14} />
+            Barchasini o'chirish
+          </motion.button>
+        </motion.div>
+      )}
     </div>
   );
 }

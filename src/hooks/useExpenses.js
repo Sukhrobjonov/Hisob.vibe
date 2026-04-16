@@ -49,5 +49,9 @@ export function useExpenses() {
     setExpenses((prev) => prev.filter((exp) => exp.id !== id));
   };
 
-  return { expenses, addExpense, removeExpense, limit, setLimit };
+  const clearAll = () => {
+    setExpenses([]);
+  };
+
+  return { expenses, addExpense, removeExpense, clearAll, limit, setLimit };
 }

@@ -3,32 +3,42 @@ export function parseExpenseInput(input) {
   const trimmed = input.trim();
   if (!trimmed) return null;
 
-  // Raqamlarni topamiz (bo'shliqlar bilan yozilgan bo'lishi mumkin: 15 000)
-  const numberMatches = trimmed.match(/\d[\d\s]*/g);
+  // Raqamlarni topamiz (faqat so'z sifatida kelsa: "taxi 2" to'g'ri, "tax2i" noto'g'ri)
+  // Bu regex raqamlarni qidiradi va ular harf bilan yopishib qolmaganini tekshiradi
+  // \b (word boundary) orqali raqamlar harfga yopishib qolmaganligini ta'minlaymiz
+  const amountPattern = /\b\d+(?:[\s,.]\d+)*\b/g;
+  const matches = [...trimmed.matchAll(amountPattern)];
   
-  if (!numberMatches) return null;
+  if (matches.length === 0) return null;
 
-  // Eng uzun raqamni summa deb olamiz yoki birinchisini. 
-  // Odatda bitta summa bo'ladi
-  let amountStr = '';
-  let maxLen = 0;
-  for (const match of numberMatches) {
-    const cleanMatch = match.replace(/\s/g, '');
-    if (cleanMatch.length > maxLen) {
-      maxLen = cleanMatch.length;
-      amountStr = cleanMatch;
+  // Bir nechta raqam bo'lsa, eng ko'p raqamli bo'lganini (eng katta ehtimolli summa) tanlaymiz
+  let bestMatch = null;
+  let maxDigits = 0;
+
+  for (const match of matches) {
+    const raw = match[0];
+    const clean = raw.replace(/[^\d]/g, '');
+    if (clean.length > 0 && clean.length >= maxDigits) {
+      maxDigits = clean.length;
+      bestMatch = {
+        raw,
+        amount: parseInt(clean, 10),
+        index: match.index
+      };
     }
   }
 
-  const amount = parseInt(amountStr, 10);
-  if (isNaN(amount)) return null;
+  if (!bestMatch) return null;
 
-  // Nomini ajratib olamiz (faqat topilgan birinchi raqamni olib tashlash orqali)
-  // Ammo raqam har xil joyda bo'lishi mumkin. Eng oddiy yo'l - hamma raqamlarni olib tashlash.
-  let name = trimmed.replace(new RegExp(amountStr.split('').join('\\s*')), '').replace(/\s+/g, ' ').trim();
+  const { raw, amount, index } = bestMatch;
 
-  // Agar ism bo'sh bo'lsa (faqat raqam kiritgan bo'lsa), Xarajat deb nomlaymiz
-  if (!name) {
+  // Nomini ajratib olamiz (topilgan summani matndan aniq o'rnidan qirqib tashlash orqali)
+  const prefix = trimmed.substring(0, index);
+  const suffix = trimmed.substring(index + raw.length);
+  let name = (prefix + " " + suffix).trim().replace(/\s+/g, ' ');
+
+  // Agar ism bo'sh bo'lsa (faqat raqam kiritgan bo'lsa), "Xarajat" deb nomlaymiz
+  if (!name || /^[\s,.]+$/.test(name)) {
     name = "Xarajat";
   } else {
     // Birinchi harfni katta qilish
